@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terra Bonum Enterprise — Handwoven Kente from Bonwire</title>
+<meta name="description" content="Authentic handwoven kente cloth, stoles, and accessories from Bonwire, Ashanti Region, Ghana. Worldwide shipping, custom orders welcome.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- Marquee -->
+  <div class="marquee">
+    <div class="marquee__track">
+      <span class="marquee__item">Handwoven in Bonwire, Ashanti Region</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Worldwide shipping</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Authentic 100% cotton &amp; silk kente</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Custom orders welcome</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Handwoven in Bonwire, Ashanti Region</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Worldwide shipping</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Authentic 100% cotton &amp; silk kente</span><span class="marquee__dot">◆</span>
+      <span class="marquee__item">Custom orders welcome</span><span class="marquee__dot">◆</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <nav class="nav">
+      <div class="brand" data-nav="home">
+        <span class="brand__name">TERRA BONUM</span>
+        <span class="brand__tag">Enterprise · Kente</span>
+      </div>
+      <div class="nav__links">
+        <button class="nav__link" data-nav="home">Home</button>
+        <button class="nav__link" data-nav="shop">Shop</button>
+        <button class="nav__link" data-nav="heritage">Heritage</button>
+        <button class="nav__link" data-nav="contact">Contact</button>
+        <button class="cart-btn" id="cartToggle">
+          Cart
+          <span class="cart-badge" id="cartBadge" hidden>0</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ===== HOME ===== -->
+  <main id="page-home" class="page">
+    <section class="hero">
+      <div class="hero__copy">
+        <div class="eyebrow eyebrow--green"><span class="eyebrow__line"></span>Est. Bonwire, Ghana</div>
+        <h1 class="hero__title">Cloth woven with<br><em>meaning &amp; memory.</em></h1>
+        <p class="hero__desc">Every strip is handwoven on traditional looms by master weavers of Bonwire — the ancestral home of kente. Own a piece of Ashanti heritage, made to be worn for generations.</p>
+        <div class="hero__actions">
+          <button class="btn btn--primary" data-nav="shop">Shop the collection</button>
+          <button class="btn btn--outline" data-nav="heritage">Our story</button>
+        </div>
+        <div class="hero__stats">
+          <div class="stat"><div class="stat__num">40+</div><div class="stat__label">years weaving</div></div>
+          <div class="stat__divider"></div>
+          <div class="stat"><div class="stat__num">100%</div><div class="stat__label">handwoven</div></div>
+          <div class="stat__divider"></div>
+          <div class="stat"><div class="stat__num">30+</div><div class="stat__label">countries shipped</div></div>
+        </div>
+      </div>
+      <div class="hero__art">
+        <div class="hero__art-bg"></div>
+        <div class="hero__art-img">
+          <img src="assets/images/kente-hero.jpg" alt="Handwoven kente cloth">
+        </div>
+        <div class="hero__badge">
+          <div class="hero__badge-title">Adweneasa</div>
+          <div class="hero__badge-sub">"my skill is exhausted"</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section__head">
+        <div>
+          <div class="eyebrow">Browse by</div>
+          <h2 class="section__title">Collections</h2>
+        </div>
+        <button class="link-arrow" data-nav="shop">View all products →</button>
+      </div>
+      <div class="grid grid--4" id="collectionsGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section__head">
+        <div>
+          <div class="eyebrow">Just off the loom</div>
+          <h2 class="section__title">Featured pieces</h2>
+        </div>
+        <button class="link-arrow" data-nav="shop">Shop all →</button>
+      </div>
+      <div class="grid grid--4" id="featuredGrid"></div>
+    </section>
+
+    <section class="heritage" id="heritage">
+      <div class="heritage__inner">
+        <div class="heritage__img">
+          <img src="assets/images/kente-heritage.jpg" alt="Weaver at the loom in Bonwire">
+        </div>
+        <div class="heritage__copy">
+          <div class="eyebrow eyebrow--gold">The Bonwire legacy</div>
+          <h2 class="heritage__title">Where kente was born.</h2>
+          <p>Legend tells of two weavers of Bonwire who watched a spider spin its web and returned home to weave the first kente from raffia. Centuries later, this village in the Ashanti Region remains the beating heart of the craft.</p>
+          <p>At Terra Bonum Enterprise, every cloth is woven strip by strip on the traditional loom. No two are the same — each colour and pattern carries a proverb, a blessing, a name.</p>
+          <div class="motif-row">
+            <div class="motif"><div class="motif__name">Adweneasa</div><div class="motif__sub">fullness of skill</div></div>
+            <div class="motif"><div class="motif__name">Sika Futuro</div><div class="motif__sub">gold dust · royalty</div></div>
+            <div class="motif"><div class="motif__name">Nsroma</div><div class="motif__sub">star · faith &amp; hope</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section__head section__head--center">
+        <div class="eyebrow">From thread to cloth</div>
+        <h2 class="section__title">The craft, in three hands</h2>
+      </div>
+      <div class="grid grid--3">
+        <div class="step">
+          <div class="step__num">01</div>
+          <h3 class="step__title">Spinning &amp; dyeing</h3>
+          <p>Cotton and silk threads are hand-dyed in the deep reds, golds and greens that give kente its voice.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">02</div>
+          <h3 class="step__title">Weaving the strips</h3>
+          <p>On the narrow loom, the weaver builds strips just four inches wide — a single cloth can take weeks.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">03</div>
+          <h3 class="step__title">Joining &amp; finishing</h3>
+          <p>Strips are hand-sewn edge to edge so the patterns align — then pressed, checked and readied to ship.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-wrap">
+      <div class="cta">
+        <div class="cta__copy">
+          <h2>Commission a custom cloth</h2>
+          <p>Weddings, chieftaincy, graduations, gifts. Tell us your colours and occasion and our weavers will create a one-of-a-kind piece for you.</p>
+        </div>
+        <button class="btn btn--light" data-nav="contact">Start a custom order</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== SHOP ===== -->
+  <main id="page-shop" class="page" hidden>
+    <div class="page-head">
+      <div class="eyebrow">The catalogue</div>
+      <h1 class="page-title">Shop all kente</h1>
+      <p class="page-sub">Prices in USD. Each piece is handwoven and one of a kind — colours may vary slightly from the photograph. Tap a piece for details.</p>
+    </div>
+    <div class="grid grid--4" id="shopGrid"></div>
+  </main>
+
+  <!-- ===== PRODUCT DETAIL ===== -->
+  <main id="page-product" class="page" hidden>
+    <button class="back-link" data-nav="shop">← Back to shop</button>
+    <div class="product-detail" id="productDetail"></div>
+  </main>
+
+  <!-- ===== CONTACT ===== -->
+  <main id="page-contact" class="page" hidden>
+    <div class="page-head page-head--center">
+      <div class="eyebrow">Get in touch</div>
+      <h1 class="page-title">Let's talk cloth</h1>
+      <p class="page-sub page-sub--center">Ready to order, or dreaming up a custom piece? Message us on WhatsApp for the fastest reply, or send a note below.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-links">
+        <a href="https://wa.me/233244632732" target="_blank" rel="noopener" class="contact-card contact-card--wa">
+          <span class="contact-card__icon">💬</span>
+          <span><span class="contact-card__label">WhatsApp</span><span class="contact-card__value">+233 24 463 2732</span></span>
+        </a>
+        <a href="https://instagram.com/terra_bonum" target="_blank" rel="noopener" class="contact-card">
+          <span class="contact-card__icon">📷</span>
+          <span><span class="contact-card__label">Instagram</span><span class="contact-card__value">Terra Bonum</span></span>
+        </a>
+        <a href="https://facebook.com/terrabonum" target="_blank" rel="noopener" class="contact-card">
+          <span class="contact-card__icon">👍</span>
+          <span><span class="contact-card__label">Facebook</span><span class="contact-card__value">Terra Bonum</span></span>
+        </a>
+        <a href="https://tiktok.com/@terrabonum" target="_blank" rel="noopener" class="contact-card">
+          <span class="contact-card__icon">🎵</span>
+          <span><span class="contact-card__label">TikTok</span><span class="contact-card__value">Terra Bonum</span></span>
+        </a>
+        <div class="contact-card">
+          <span class="contact-card__icon">📍</span>
+          <span><span class="contact-card__label">Shop</span><span class="contact-card__value">Plt 48, BLK M, Aburaso new-site, Kumasi, Ashanti Region</span></span>
+        </div>
+      </div>
+      <form class="contact-form" id="contactForm">
+        <div class="form-row">
+          <label class="field">Name
+            <input type="text" id="fName" placeholder="Your name" autocomplete="name">
+          </label>
+          <label class="field">Email
+            <input type="email" id="fEmail" placeholder="you@email.com" autocomplete="email">
+          </label>
+        </div>
+        <label class="field">What are you looking for?
+          <textarea id="fMsg" rows="5" placeholder="Tell us the piece, colours, occasion, quantity…"></textarea>
+        </label>
+        <button type="submit" class="btn btn--primary btn--block">Send via WhatsApp</button>
+        <div class="form-note">This opens WhatsApp with your message ready to send.</div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">TERRA BONUM</div>
+        <div class="footer-brand-tag">Enterprise · Kente</div>
+        <p class="footer-desc">Handwoven kente cloth and accessories from Bonwire, the ancestral home of the craft in Ghana's Ashanti Region.</p>
+      </div>
+      <div>
+        <div class="footer-heading">Explore</div>
+        <div class="footer-links">
+          <button data-nav="home">Home</button>
+          <button data-nav="shop">Shop</button>
+          <button data-nav="heritage">Heritage</button>
+          <button data-nav="contact">Contact</button>
+        </div>
+      </div>
+      <div>
+        <div class="footer-heading">Reach us</div>
+        <div class="footer-links footer-links--text">
+          <a href="https://wa.me/233244632732" target="_blank" rel="noopener">WhatsApp · +233 24 463 2732</a>
+          <a href="https://instagram.com/terra_bonum" target="_blank" rel="noopener">Instagram · Terra Bonum</a>
+          <a href="https://facebook.com/terrabonum" target="_blank" rel="noopener">Facebook · Terra Bonum</a>
+          <a href="https://tiktok.com/@terrabonum" target="_blank" rel="noopener">TikTok · Terra Bonum</a>
+          <span>Plt 48, BLK M, Aburaso new-site, Kumasi, Ashanti Region</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Terra Bonum Enterprise. All rights reserved.</span>
+      <span>Handwoven with pride in Ghana 🇬🇭</span>
+    </div>
+  </footer>
+
+  <!-- Cart Drawer -->
+  <div class="overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-drawer__head">
+      <div class="cart-drawer__title">Your cart</div>
+      <button class="cart-close" id="cartClose">×</button>
+    </div>
+    <div class="cart-drawer__body" id="cartBody"></div>
+    <div class="cart-drawer__footer" id="cartFooter" hidden>
+      <div class="cart-subtotal-row">
+        <span>Subtotal</span>
+        <span id="cartSubtotal">$0</span>
+      </div>
+      <div class="cart-note">Shipping &amp; any duties calculated at checkout.</div>
+      <button class="btn btn--green btn--block" id="checkoutBtn">Checkout via WhatsApp</button>
+    </div>
+  </aside>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
