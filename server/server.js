@@ -1,139 +1,84 @@
-require('dotenv').config();
-
 const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const { execFile } = require('child_process');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
 const express = require('express');
 const multer = require('multer');
-const ffmpegPath = require('ffmpeg-static');
+const cloudinary = require('cloudinary').v2;
+const { MongoClient } = require('mongodb');
 
 const ROOT = path.join(__dirname, '..');
-const DATA_FILE = path.join(__dirname, 'data', 'products.json');
-const VIDEOS_DATA_FILE = path.join(__dirname, 'data', 'videos.json');
-const ABOUT_DATA_FILE = path.join(__dirname, 'data', 'about.json');
-const MOMENTS_DATA_FILE = path.join(__dirname, 'data', 'moments.json');
-const UPLOAD_DIR = path.join(ROOT, 'assets', 'images', 'uploads');
-const VIDEO_UPLOAD_DIR = path.join(ROOT, 'assets', 'videos', 'uploads');
-const MOMENTS_UPLOAD_DIR = path.join(ROOT, 'assets', 'moments', 'uploads');
 const PORT = process.env.PORT || 5173;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'TerraBonum2026!';
+const MONGODB_URI = process.env.MONGODB_URI;
+const DB_NAME = process.env.MONGODB_DB || 'terrabonum';
 
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-fs.mkdirSync(VIDEO_UPLOAD_DIR, { recursive: true });
-fs.mkdirSync(MOMENTS_UPLOAD_DIR, { recursive: true });
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// ---- tiny JSON datastore ----
-function readProducts() {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-  catch (e) { return []; }
+let db;
+async function connectDb() {
+  if (!MONGODB_URI) throw new Error('MONGODB_URI is not set');
+  const client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  db = client.db(DB_NAME);
+  console.log('Connected to MongoDB');
 }
-function writeProducts(list) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2));
-}
-function readVideos() {
-  try { return JSON.parse(fs.readFileSync(VIDEOS_DATA_FILE, 'utf8')); }
-  catch (e) { return []; }
-}
-function writeVideos(list) {
-  fs.writeFileSync(VIDEOS_DATA_FILE, JSON.stringify(list, null, 2));
-}
-function readAbout() {
-  try { return JSON.parse(fs.readFileSync(ABOUT_DATA_FILE, 'utf8')); }
-  catch (e) { return { name: '', role: '', bio: '', photo: '' }; }
-}
-function writeAbout(data) {
-  fs.writeFileSync(ABOUT_DATA_FILE, JSON.stringify(data, null, 2));
-}
-function readMoments() {
-  try { return JSON.parse(fs.readFileSync(MOMENTS_DATA_FILE, 'utf8')); }
-  catch (e) { return []; }
-}
-function writeMoments(list) {
-  fs.writeFileSync(MOMENTS_DATA_FILE, JSON.stringify(list, null, 2));
-}
+
 function slugify(name) {
   return name.toLowerCase().trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'item';
 }
-function uniqueId(base, list) {
+async function uniqueId(base, collection) {
   let id = base, n = 1;
-  while (list.some(p => p.id === id)) { id = base + '-' + (++n); }
+  while (await collection.findOne({ id })) { id = base + '-' + (++n); }
   return id;
 }
 
-// Re-encodes any uploaded video (HEVC from iPhones/Instagram, etc.) to
-// H.264 + AAC, the one combination every major browser plays natively.
-function transcodeToH264(inputPath, outputPath) {
+// Uploads a buffer straight to Cloudinary (no local disk writes — this app
+// runs on hosts with ephemeral/no persistent local storage). Cloudinary
+// transcodes video to a broadly-compatible H.264 MP4 automatically, which
+// fixes the common case of HEVC clips from iPhones/Instagram not playing
+// back in most browsers.
+function uploadToCloudinary(buffer, resourceType) {
   return new Promise((resolve, reject) => {
-    execFile(ffmpegPath, [
-      '-y',
-      '-i', inputPath,
-      '-c:v', 'libx264',
-      '-preset', 'veryfast',
-      '-crf', '23',
-      '-pix_fmt', 'yuv420p',
-      '-c:a', 'aac',
-      '-b:a', '128k',
-      '-movflags', '+faststart',
-      outputPath
-    ], { maxBuffer: 1024 * 1024 * 20 }, (err) => {
+    const options = { resource_type: resourceType, folder: 'terra-bonum' };
+    if (resourceType === 'video') {
+      options.video_codec = 'h264';
+      options.audio_codec = 'aac';
+    }
+    const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
       if (err) return reject(err);
-      resolve();
+      resolve(result);
     });
+    stream.end(buffer);
   });
 }
 
-// ---- upload handling ----
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext) ? ext : '.jpg';
-    cb(null, Date.now() + '-' + crypto.randomBytes(4).toString('hex') + safeExt);
-  }
-});
-const upload = multer({
-  storage,
+const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const VIDEO_MIMES = ['video/mp4', 'video/quicktime', 'video/webm'];
+
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype);
+    const ok = IMAGE_MIMES.includes(file.mimetype);
     cb(ok ? null : new Error('Only image files are allowed'), ok);
   }
 });
-
-const videoStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, VIDEO_UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeExt = ['.mp4', '.mov', '.webm'].includes(ext) ? ext : '.mp4';
-    cb(null, Date.now() + '-' + crypto.randomBytes(4).toString('hex') + safeExt);
-  }
-});
 const uploadVideo = multer({
-  storage: videoStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = ['video/mp4', 'video/quicktime', 'video/webm'].includes(file.mimetype);
+    const ok = VIDEO_MIMES.includes(file.mimetype);
     cb(ok ? null : new Error('Only video files are allowed'), ok);
   }
 });
-
-const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const VIDEO_MIMES = ['video/mp4', 'video/quicktime', 'video/webm'];
-const momentStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, MOMENTS_UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const isVideo = VIDEO_MIMES.includes(file.mimetype);
-    const ext = path.extname(file.originalname).toLowerCase();
-    const allowed = isVideo ? ['.mp4', '.mov', '.webm'] : ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-    const safeExt = allowed.includes(ext) ? ext : (isVideo ? '.mp4' : '.jpg');
-    cb(null, Date.now() + '-' + crypto.randomBytes(4).toString('hex') + safeExt);
-  }
-});
 const uploadMoment = multer({
-  storage: momentStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ok = IMAGE_MIMES.includes(file.mimetype) || VIDEO_MIMES.includes(file.mimetype);
@@ -142,9 +87,8 @@ const uploadMoment = multer({
 });
 
 const app = express();
-// no-store on every response (API and static alike) while this is under
-// active development, so nothing — including admin fetch results — ever
-// shows a stale cached copy after a change.
+// no-store on every response so nothing — including admin fetch results —
+// ever shows a stale cached copy after a change.
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
@@ -156,19 +100,28 @@ function requireAdmin(req, res, next) {
   if (supplied && supplied === ADMIN_PASSWORD) return next();
   return res.status(401).json({ error: 'Not authenticated' });
 }
+function stripMongoId(doc) {
+  if (!doc) return doc;
+  const { _id, ...rest } = doc;
+  return rest;
+}
 
 // ---- public API ----
-app.get('/api/products', (req, res) => {
-  res.json(readProducts());
+app.get('/api/products', async (req, res) => {
+  const list = await db.collection('products').find().toArray();
+  res.json(list.map(stripMongoId));
 });
-app.get('/api/videos', (req, res) => {
-  res.json(readVideos());
+app.get('/api/videos', async (req, res) => {
+  const list = await db.collection('videos').find().toArray();
+  res.json(list.map(stripMongoId));
 });
-app.get('/api/about', (req, res) => {
-  res.json(readAbout());
+app.get('/api/about', async (req, res) => {
+  const doc = await db.collection('about').findOne({ _id: 'singleton' });
+  res.json(stripMongoId(doc) || { name: '', role: '', bio: '', photo: '' });
 });
-app.get('/api/moments', (req, res) => {
-  res.json(readMoments());
+app.get('/api/moments', async (req, res) => {
+  const list = await db.collection('moments').find().toArray();
+  res.json(list.map(stripMongoId));
 });
 
 // ---- admin auth ----
@@ -184,42 +137,57 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // ---- admin product management ----
-app.get('/api/admin/products', requireAdmin, (req, res) => {
-  res.json(readProducts());
+app.get('/api/admin/products', requireAdmin, async (req, res) => {
+  const list = await db.collection('products').find().toArray();
+  res.json(list.map(stripMongoId));
 });
 
-app.post('/api/admin/products', requireAdmin, upload.single('image'), (req, res) => {
+app.post('/api/admin/products', requireAdmin, uploadImage.single('image'), async (req, res) => {
   const b = req.body || {};
   if (!b.name || !b.price) {
     return res.status(400).json({ error: 'Name and price are required' });
   }
-  const list = readProducts();
-  const id = uniqueId(slugify(b.name), list);
+  const collection = db.collection('products');
+  let img = b.img || 'assets/images/kente-hero.jpg';
+  if (req.file) {
+    try {
+      const result = await uploadToCloudinary(req.file.buffer, 'image');
+      img = result.secure_url;
+    } catch (err) {
+      return res.status(500).json({ error: 'Could not upload that image. Try again.' });
+    }
+  }
   const product = {
-    id,
+    id: await uniqueId(slugify(b.name), collection),
     name: b.name.trim(),
     category: (b.category || '').trim(),
     collection: (b.collection || b.category || '').trim(),
     meaning: (b.meaning || '').trim(),
     tag: (b.tag || '').trim(),
     price: Number(b.price) || 0,
-    img: req.file ? 'assets/images/uploads/' + req.file.filename : (b.img || 'assets/images/kente-hero.jpg'),
+    img,
     size: (b.size || '').trim(),
     desc: (b.desc || '').trim()
   };
-  list.push(product);
-  writeProducts(list);
-  res.status(201).json(product);
+  await collection.insertOne(product);
+  res.status(201).json(stripMongoId(product));
 });
 
-app.put('/api/admin/products/:id', requireAdmin, upload.single('image'), (req, res) => {
-  const list = readProducts();
-  const idx = list.findIndex(p => p.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Product not found' });
+app.put('/api/admin/products/:id', requireAdmin, uploadImage.single('image'), async (req, res) => {
+  const collection = db.collection('products');
+  const existing = await collection.findOne({ id: req.params.id });
+  if (!existing) return res.status(404).json({ error: 'Product not found' });
   const b = req.body || {};
-  const existing = list[idx];
-  const updated = {
-    ...existing,
+  let img = existing.img;
+  if (req.file) {
+    try {
+      const result = await uploadToCloudinary(req.file.buffer, 'image');
+      img = result.secure_url;
+    } catch (err) {
+      return res.status(500).json({ error: 'Could not upload that image. Try again.' });
+    }
+  }
+  const updates = {
     name: b.name !== undefined ? b.name.trim() : existing.name,
     category: b.category !== undefined ? b.category.trim() : existing.category,
     collection: b.collection !== undefined ? b.collection.trim() : existing.collection,
@@ -228,24 +196,22 @@ app.put('/api/admin/products/:id', requireAdmin, upload.single('image'), (req, r
     price: b.price !== undefined ? (Number(b.price) || 0) : existing.price,
     size: b.size !== undefined ? b.size.trim() : existing.size,
     desc: b.desc !== undefined ? b.desc.trim() : existing.desc,
-    img: req.file ? 'assets/images/uploads/' + req.file.filename : existing.img
+    img
   };
-  list[idx] = updated;
-  writeProducts(list);
-  res.json(updated);
+  await collection.updateOne({ id: req.params.id }, { $set: updates });
+  res.json(stripMongoId({ ...existing, ...updates }));
 });
 
-app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
-  const list = readProducts();
-  const next = list.filter(p => p.id !== req.params.id);
-  if (next.length === list.length) return res.status(404).json({ error: 'Product not found' });
-  writeProducts(next);
+app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
+  const result = await db.collection('products').deleteOne({ id: req.params.id });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Product not found' });
   res.json({ ok: true });
 });
 
 // ---- admin "watch the craft" video management ----
-app.get('/api/admin/videos', requireAdmin, (req, res) => {
-  res.json(readVideos());
+app.get('/api/admin/videos', requireAdmin, async (req, res) => {
+  const list = await db.collection('videos').find().toArray();
+  res.json(list.map(stripMongoId));
 });
 
 app.post('/api/admin/videos', requireAdmin, uploadVideo.single('video'), async (req, res) => {
@@ -253,204 +219,160 @@ app.post('/api/admin/videos', requireAdmin, uploadVideo.single('video'), async (
   if (!req.file) return res.status(400).json({ error: 'A video file is required' });
   if (!b.title) return res.status(400).json({ error: 'Title is required' });
 
-  const rawPath = req.file.path;
-  const finalFilename = path.basename(req.file.filename, path.extname(req.file.filename)) + '-web.mp4';
-  const finalPath = path.join(VIDEO_UPLOAD_DIR, finalFilename);
-
+  let uploaded;
   try {
-    // Always re-encode to H.264/AAC: phone and Instagram exports are often
-    // HEVC, which uploads fine but silently fails to play in most browsers.
-    await transcodeToH264(rawPath, finalPath);
+    uploaded = await uploadToCloudinary(req.file.buffer, 'video');
   } catch (err) {
-    fs.unlink(rawPath, () => {});
-    fs.unlink(finalPath, () => {});
     return res.status(500).json({ error: 'Could not process that video file. Try a different file or format.' });
   }
-  fs.unlink(rawPath, () => {});
 
-  const list = readVideos();
+  const collection = db.collection('videos');
   const video = {
-    id: uniqueId(slugify(b.title), list),
+    id: await uniqueId(slugify(b.title), collection),
     title: b.title.trim(),
     caption: (b.caption || '').trim(),
-    video: 'assets/videos/uploads/' + finalFilename,
+    video: uploaded.secure_url,
     createdAt: Date.now()
   };
-  list.push(video);
-  writeVideos(list);
-  res.status(201).json(video);
+  await collection.insertOne(video);
+  res.status(201).json(stripMongoId(video));
 });
 
 app.put('/api/admin/videos/:id', requireAdmin, uploadVideo.single('video'), async (req, res) => {
-  const list = readVideos();
-  const idx = list.findIndex(v => v.id === req.params.id);
-  if (idx === -1) {
-    if (req.file) fs.unlink(req.file.path, () => {});
-    return res.status(404).json({ error: 'Video not found' });
-  }
+  const collection = db.collection('videos');
+  const existing = await collection.findOne({ id: req.params.id });
+  if (!existing) return res.status(404).json({ error: 'Video not found' });
   const b = req.body || {};
-  const existing = list[idx];
-  let videoPath = existing.video;
+  let videoUrl = existing.video;
 
   if (req.file) {
-    const rawPath = req.file.path;
-    const finalFilename = path.basename(req.file.filename, path.extname(req.file.filename)) + '-web.mp4';
-    const finalPath = path.join(VIDEO_UPLOAD_DIR, finalFilename);
     try {
-      await transcodeToH264(rawPath, finalPath);
+      const uploaded = await uploadToCloudinary(req.file.buffer, 'video');
+      videoUrl = uploaded.secure_url;
     } catch (err) {
-      fs.unlink(rawPath, () => {});
-      fs.unlink(finalPath, () => {});
       return res.status(500).json({ error: 'Could not process that video file. Try a different file or format.' });
     }
-    fs.unlink(rawPath, () => {});
-    const oldFilePath = path.join(ROOT, existing.video);
-    fs.unlink(oldFilePath, () => {});
-    videoPath = 'assets/videos/uploads/' + finalFilename;
   }
 
-  const updated = {
-    ...existing,
+  const updates = {
     title: b.title !== undefined ? b.title.trim() : existing.title,
     caption: b.caption !== undefined ? b.caption.trim() : existing.caption,
-    video: videoPath
+    video: videoUrl
   };
-  list[idx] = updated;
-  writeVideos(list);
-  res.json(updated);
+  await collection.updateOne({ id: req.params.id }, { $set: updates });
+  res.json(stripMongoId({ ...existing, ...updates }));
 });
 
-app.delete('/api/admin/videos/:id', requireAdmin, (req, res) => {
-  const list = readVideos();
-  const target = list.find(v => v.id === req.params.id);
-  if (!target) return res.status(404).json({ error: 'Video not found' });
-  writeVideos(list.filter(v => v.id !== req.params.id));
-  const filePath = path.join(ROOT, target.video);
-  fs.unlink(filePath, () => {});
+app.delete('/api/admin/videos/:id', requireAdmin, async (req, res) => {
+  const result = await db.collection('videos').deleteOne({ id: req.params.id });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Video not found' });
   res.json({ ok: true });
 });
 
 // ---- admin "about" (meet the maker) management ----
-app.get('/api/admin/about', requireAdmin, (req, res) => {
-  res.json(readAbout());
+app.get('/api/admin/about', requireAdmin, async (req, res) => {
+  const doc = await db.collection('about').findOne({ _id: 'singleton' });
+  res.json(stripMongoId(doc) || { name: '', role: '', bio: '', photo: '' });
 });
 
-app.put('/api/admin/about', requireAdmin, upload.single('photo'), (req, res) => {
+app.put('/api/admin/about', requireAdmin, uploadImage.single('photo'), async (req, res) => {
   const b = req.body || {};
-  const existing = readAbout();
+  const existing = (await db.collection('about').findOne({ _id: 'singleton' })) || {};
+  let photo = existing.photo || '';
+  if (req.file) {
+    try {
+      const result = await uploadToCloudinary(req.file.buffer, 'image');
+      photo = result.secure_url;
+    } catch (err) {
+      return res.status(500).json({ error: 'Could not upload that photo. Try again.' });
+    }
+  }
   const updated = {
-    name: b.name !== undefined ? b.name.trim() : existing.name,
-    role: b.role !== undefined ? b.role.trim() : existing.role,
-    bio: b.bio !== undefined ? b.bio.trim() : existing.bio,
-    photo: req.file ? 'assets/images/uploads/' + req.file.filename : existing.photo
+    name: b.name !== undefined ? b.name.trim() : (existing.name || ''),
+    role: b.role !== undefined ? b.role.trim() : (existing.role || ''),
+    bio: b.bio !== undefined ? b.bio.trim() : (existing.bio || ''),
+    photo
   };
-  writeAbout(updated);
+  await db.collection('about').updateOne({ _id: 'singleton' }, { $set: updated }, { upsert: true });
   res.json(updated);
 });
 
 // ---- admin "customer moments" management ----
-// Handles a moment upload's file: images are kept as-is, videos are
-// re-encoded to H.264/AAC just like "watch the craft" clips. Returns the
-// final relative path, or throws with a message safe to show the admin.
-async function processMomentFile(file) {
-  const isVideo = VIDEO_MIMES.includes(file.mimetype);
-  if (!isVideo) {
-    return { type: 'image', path: 'assets/moments/uploads/' + file.filename };
-  }
-  const rawPath = file.path;
-  const finalFilename = path.basename(file.filename, path.extname(file.filename)) + '-web.mp4';
-  const finalPath = path.join(MOMENTS_UPLOAD_DIR, finalFilename);
-  try {
-    await transcodeToH264(rawPath, finalPath);
-  } catch (err) {
-    fs.unlink(rawPath, () => {});
-    fs.unlink(finalPath, () => {});
-    throw new Error('Could not process that video file. Try a different file or format.');
-  }
-  fs.unlink(rawPath, () => {});
-  return { type: 'video', path: 'assets/moments/uploads/' + finalFilename };
-}
-
-app.get('/api/admin/moments', requireAdmin, (req, res) => {
-  res.json(readMoments());
+app.get('/api/admin/moments', requireAdmin, async (req, res) => {
+  const list = await db.collection('moments').find().toArray();
+  res.json(list.map(stripMongoId));
 });
 
 app.post('/api/admin/moments', requireAdmin, uploadMoment.single('media'), async (req, res) => {
   const b = req.body || {};
   if (!req.file) return res.status(400).json({ error: 'A photo or video is required' });
+  const isVideo = VIDEO_MIMES.includes(req.file.mimetype);
 
-  let processed;
+  let uploaded;
   try {
-    processed = await processMomentFile(req.file);
+    uploaded = await uploadToCloudinary(req.file.buffer, isVideo ? 'video' : 'image');
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Could not process that file. Try again.' });
   }
 
-  const list = readMoments();
-  const idBase = slugify(b.customerName || b.occasion || 'moment');
+  const collection = db.collection('moments');
   const moment = {
-    id: uniqueId(idBase, list),
+    id: await uniqueId(slugify(b.customerName || b.occasion || 'moment'), collection),
     customerName: (b.customerName || '').trim(),
     occasion: (b.occasion || '').trim(),
-    mediaType: processed.type,
-    media: processed.path,
+    mediaType: isVideo ? 'video' : 'image',
+    media: uploaded.secure_url,
     createdAt: Date.now()
   };
-  list.push(moment);
-  writeMoments(list);
-  res.status(201).json(moment);
+  await collection.insertOne(moment);
+  res.status(201).json(stripMongoId(moment));
 });
 
 app.put('/api/admin/moments/:id', requireAdmin, uploadMoment.single('media'), async (req, res) => {
-  const list = readMoments();
-  const idx = list.findIndex(m => m.id === req.params.id);
-  if (idx === -1) {
-    if (req.file) fs.unlink(req.file.path, () => {});
-    return res.status(404).json({ error: 'Moment not found' });
-  }
+  const collection = db.collection('moments');
+  const existing = await collection.findOne({ id: req.params.id });
+  if (!existing) return res.status(404).json({ error: 'Moment not found' });
   const b = req.body || {};
-  const existing = list[idx];
   let mediaType = existing.mediaType;
-  let mediaPath = existing.media;
+  let media = existing.media;
 
   if (req.file) {
-    let processed;
+    const isVideo = VIDEO_MIMES.includes(req.file.mimetype);
     try {
-      processed = await processMomentFile(req.file);
+      const uploaded = await uploadToCloudinary(req.file.buffer, isVideo ? 'video' : 'image');
+      mediaType = isVideo ? 'video' : 'image';
+      media = uploaded.secure_url;
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: 'Could not process that file. Try again.' });
     }
-    const oldFilePath = path.join(ROOT, existing.media);
-    fs.unlink(oldFilePath, () => {});
-    mediaType = processed.type;
-    mediaPath = processed.path;
   }
 
-  const updated = {
-    ...existing,
+  const updates = {
     customerName: b.customerName !== undefined ? b.customerName.trim() : existing.customerName,
     occasion: b.occasion !== undefined ? b.occasion.trim() : existing.occasion,
     mediaType,
-    media: mediaPath
+    media
   };
-  list[idx] = updated;
-  writeMoments(list);
-  res.json(updated);
+  await collection.updateOne({ id: req.params.id }, { $set: updates });
+  res.json(stripMongoId({ ...existing, ...updates }));
 });
 
-app.delete('/api/admin/moments/:id', requireAdmin, (req, res) => {
-  const list = readMoments();
-  const target = list.find(m => m.id === req.params.id);
-  if (!target) return res.status(404).json({ error: 'Moment not found' });
-  writeMoments(list.filter(m => m.id !== req.params.id));
-  const filePath = path.join(ROOT, target.media);
-  fs.unlink(filePath, () => {});
+app.delete('/api/admin/moments/:id', requireAdmin, async (req, res) => {
+  const result = await db.collection('moments').deleteOne({ id: req.params.id });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Moment not found' });
   res.json({ ok: true });
 });
 
 // ---- static site (after API routes so API always wins) ----
 app.use(express.static(ROOT));
 
-app.listen(PORT, () => {
-  console.log('Terra Bonum server running at http://localhost:' + PORT);
-});
+connectDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log('Terra Bonum server running at http://localhost:' + PORT);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB:', err.message);
+    process.exit(1);
+  });
