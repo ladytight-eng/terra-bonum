@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Terra Bonum Enterprise</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body class="admin-body">
+
+  <!-- Login gate -->
+  <div class="admin-login" id="loginView">
+    <form class="admin-login__card" id="loginForm">
+      <div class="eyebrow eyebrow--gold">Terra Bonum</div>
+      <h1 class="admin-login__title">Admin sign in</h1>
+      <label class="field">Password
+        <input type="text" id="loginPassword" placeholder="Enter admin password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </label>
+      <div class="admin-hint" id="loginHint">Nothing typed yet</div>
+      <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+      <div class="admin-error" id="loginError" hidden></div>
+    </form>
+  </div>
+
+  <!-- Admin dashboard -->
+  <div class="admin-app" id="appView" hidden>
+    <header class="admin-header">
+      <div>
+        <div class="eyebrow eyebrow--gold">Terra Bonum</div>
+        <h1 class="admin-header__title">Manage products</h1>
+      </div>
+      <div class="admin-header__actions">
+        <a href="index.html" class="btn btn--outline">View site</a>
+        <button class="btn btn--outline" id="logoutBtn">Log out</button>
+      </div>
+    </header>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title" id="formTitle">Add a new piece</h2>
+      <form class="admin-form" id="productForm" enctype="multipart/form-data">
+        <input type="hidden" id="pId" value="">
+        <div class="form-row">
+          <label class="field">Name
+            <input type="text" id="pName" placeholder="e.g. Adweneasa Cloth" required>
+          </label>
+          <label class="field">Price (USD)
+            <input type="number" id="pPrice" min="0" step="0.01" placeholder="e.g. 480" required>
+          </label>
+        </div>
+        <div class="form-row">
+          <label class="field">Category
+            <input type="text" id="pCategory" placeholder="e.g. Full Cloth">
+          </label>
+          <label class="field">Collection
+            <input type="text" id="pCollection" placeholder="e.g. Full Cloth">
+          </label>
+        </div>
+        <div class="form-row">
+          <label class="field">Meaning / subtitle
+            <input type="text" id="pMeaning" placeholder="e.g. gold dust · royalty">
+          </label>
+          <label class="field">Tag
+            <input type="text" id="pTag" placeholder="e.g. New, Bestseller, Limited">
+          </label>
+        </div>
+        <label class="field">Size / details
+          <input type="text" id="pSize" placeholder="e.g. 6 yards · full toga / women's set">
+        </label>
+        <label class="field">Description
+          <textarea id="pDesc" rows="4" placeholder="Tell customers about this piece…"></textarea>
+        </label>
+        <label class="field">Photo
+          <input type="file" id="pImage" accept="image/*">
+        </label>
+        <div class="admin-form__preview" id="pPreview" hidden>
+          <img id="pPreviewImg" alt="Current photo">
+        </div>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--primary" id="submitBtn">Add product</button>
+          <button type="button" class="btn btn--outline" id="cancelEditBtn" hidden>Cancel edit</button>
+        </div>
+        <div class="admin-error" id="formError" hidden></div>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title">Current products (<span id="productCount">0</span>)</h2>
+      <div class="admin-list" id="productList"></div>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title" id="videoFormTitle">Watch the craft — add a video</h2>
+      <p class="admin-panel__hint">Short clips of the weaving process, shown on the homepage for customers to watch. Separate from the shop — adding or removing these never affects your products.</p>
+      <form class="admin-form" id="videoForm" enctype="multipart/form-data">
+        <input type="hidden" id="vId" value="">
+        <label class="field">Title
+          <input type="text" id="vTitle" placeholder="e.g. Weaving the Adweneasa pattern" required>
+        </label>
+        <label class="field">Caption (optional)
+          <textarea id="vCaption" rows="2" placeholder="A short note about this clip…"></textarea>
+        </label>
+        <label class="field" id="vFileLabel">Video file (MP4, MOV or WebM, up to 100MB)
+          <input type="file" id="vFile" accept="video/mp4,video/quicktime,video/webm" required>
+        </label>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--primary" id="videoSubmitBtn">Upload video</button>
+          <button type="button" class="btn btn--outline" id="videoCancelEditBtn" hidden>Cancel edit</button>
+        </div>
+        <div class="admin-error" id="videoFormError" hidden></div>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title">Current videos (<span id="videoCount">0</span>)</h2>
+      <div class="admin-list" id="videoList"></div>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title">Meet the maker</h2>
+      <p class="admin-panel__hint">Your name, photo and a short story about you — shown on the homepage so customers can see the person behind the shop. Leave blank to keep it hidden.</p>
+      <form class="admin-form" id="aboutForm" enctype="multipart/form-data">
+        <label class="field">Your name
+          <input type="text" id="aName" placeholder="e.g. Akosua Mensah">
+        </label>
+        <label class="field">Title / role
+          <input type="text" id="aRole" placeholder="e.g. Founder, Terra Bonum Enterprise">
+        </label>
+        <label class="field">Your story
+          <textarea id="aBio" rows="5" placeholder="Tell customers who you are, why you started, and what this business means to you…"></textarea>
+        </label>
+        <label class="field">Your photo
+          <input type="file" id="aPhoto" accept="image/*">
+        </label>
+        <div class="admin-form__preview" id="aPreview" hidden>
+          <img id="aPreviewImg" alt="Current photo">
+        </div>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--primary" id="aboutSubmitBtn">Save</button>
+        </div>
+        <div class="admin-error" id="aboutFormError" hidden></div>
+        <div class="admin-success" id="aboutFormSuccess" hidden>Saved — check the homepage to see it live.</div>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title" id="momentFormTitle">Customer moments — add a photo or video</h2>
+      <p class="admin-panel__hint">Photos or short clips of customers wearing or using what they bought for their big day. Not tied to any product — completely separate from your shop listings.</p>
+      <form class="admin-form" id="momentForm" enctype="multipart/form-data">
+        <input type="hidden" id="mId" value="">
+        <label class="field">Customer name (optional)
+          <input type="text" id="mName" placeholder="e.g. Ama &amp; Kwame">
+        </label>
+        <label class="field">Occasion (optional)
+          <input type="text" id="mOccasion" placeholder="e.g. Wedding, June 2026">
+        </label>
+        <label class="field" id="mFileLabel">Photo or video (JPG, PNG, MP4, MOV or WebM, up to 100MB)
+          <input type="file" id="mFile" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" required>
+        </label>
+        <div class="admin-form__preview" id="mPreview" hidden>
+          <img id="mPreviewImg" alt="Current photo">
+        </div>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--primary" id="momentSubmitBtn">Add moment</button>
+          <button type="button" class="btn btn--outline" id="momentCancelEditBtn" hidden>Cancel edit</button>
+        </div>
+        <div class="admin-error" id="momentFormError" hidden></div>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title">Current moments (<span id="momentCount">0</span>)</h2>
+      <div class="admin-list" id="momentList"></div>
+    </section>
+  </div>
+
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

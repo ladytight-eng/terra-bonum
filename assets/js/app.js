@@ -4,23 +4,24 @@
   const WA = '233244632732';
   const CART_KEY = 'terrabonum_cart';
 
-  const PRODUCTS = [
-    { id: 'royal-fire', name: 'Fathia Royal Cloth', category: 'Full Cloth', collection: 'Full Cloth', meaning: 'Fathia Fata Nkrumah', tag: 'Bestseller', price: 480, img: 'assets/images/kente-hero.jpg', size: '6 yards · full men’s toga / 12 yards women’s set', desc: 'A commanding cloth in the classic red, gold, green and blue — the colours of celebration and royalty. Woven strip by strip and hand-joined so the zig-zag motifs align across the full width.' },
-    { id: 'pink-grove', name: 'Emaa Da Set', category: 'Full Cloth', collection: 'Full Cloth', meaning: 'Emaa Da · unprecedented', tag: 'New', price: 460, img: 'assets/images/kente-heritage.jpg', size: '6 yards · full toga / women’s set', desc: 'A softer palette of olive green, gold and rose — refined and modern while staying true to the traditional weave. A favourite for engagements and outdooring ceremonies.' },
-    { id: 'sunset-zig', name: 'Nsroma Cloth', category: 'Full Cloth', collection: 'Full Cloth', meaning: 'Nsroma · star of hope', tag: 'Limited', price: 495, img: 'assets/images/kente-sunset.jpg', size: '6 yards · full toga / women’s set', desc: 'Vivid magenta, emerald and orange charged with shimmer thread. A statement piece that catches the light — woven for those who want to be seen.' },
-    { id: 'grad-stole', name: 'Graduation Stole', category: 'Stoles & Sashes', collection: 'Stoles & Sashes', meaning: 'wear your achievement', tag: 'Popular', price: 65, img: 'assets/images/kente-hero.jpg', size: 'Approx. 72" × 5" · one size', desc: 'A handwoven kente stole to crown your milestone. Rich, durable and made to be kept — a graduation keepsake passed down for years.' },
-    { id: 'clutch-bag', name: 'Woven Clutch Bag', category: 'Bags & Accessories', collection: 'Bags & Accessories', meaning: 'carry your culture', tag: 'Accessory', price: 85, img: 'assets/images/kente-heritage.jpg', size: 'Approx. 10" × 6" · lined, zip close', desc: 'A structured clutch cut from genuine kente and fully lined. The perfect finishing touch for weddings, church and events.' },
-    { id: 'bow-tie', name: 'Kente Bow Tie', category: 'Bags & Accessories', collection: 'Bags & Accessories', meaning: 'a nod to heritage', tag: 'Accessory', price: 35, img: 'assets/images/kente-sunset.jpg', size: 'Adjustable neck strap · one size', desc: 'A self-tie kente bow tie for grooms, graduates and gentlemen. Small in size, big on statement.' },
-    { id: 'table-run', name: 'Kente Table Runner', category: 'Home', collection: 'Home', meaning: 'heritage at the table', tag: 'Home', price: 70, img: 'assets/images/kente-hero.jpg', size: 'Approx. 72" × 13"', desc: 'Bring the warmth of Bonwire to your table. A handwoven runner that turns any gathering into a celebration.' },
-    { id: 'headwrap', name: 'Kente Head Wrap', category: 'Bags & Accessories', collection: 'Bags & Accessories', meaning: 'crown yourself', tag: 'Accessory', price: 45, img: 'assets/images/kente-heritage.jpg', size: 'Approx. 72" × 22"', desc: 'A generous head wrap (duku) in vibrant kente — tie it your way. Also worn as a shawl or sash.' }
-  ];
+  let PRODUCTS = [];
+  let VIDEOS = [];
+  let ABOUT = null;
+  let MOMENTS = [];
 
-  const COLLECTIONS = [
-    { id: 'Full Cloth', name: 'Full Cloth', count: '3 pieces', img: 'assets/images/kente-hero.jpg' },
-    { id: 'Stoles & Sashes', name: 'Stoles & Sashes', count: '1 piece', img: 'assets/images/kente-sunset.jpg' },
-    { id: 'Bags & Accessories', name: 'Accessories', count: '3 pieces', img: 'assets/images/kente-heritage.jpg' },
-    { id: 'Home', name: 'Home', count: '1 piece', img: 'assets/images/kente-hero.jpg' }
-  ];
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function buildCollections() {
+    const byName = {};
+    PRODUCTS.forEach(p => {
+      const name = p.collection || p.category || 'Other';
+      if (!byName[name]) byName[name] = { id: name, name, count: 0, img: p.img };
+      byName[name].count += 1;
+    });
+    return Object.values(byName).map(c => ({ ...c, count: c.count + (c.count === 1 ? ' piece' : ' pieces') }));
+  }
 
   const state = {
     page: 'home',
@@ -130,9 +131,59 @@
       </div>`;
   }
 
+  function videoCardHTML(v) {
+    return `
+      <div class="video-card">
+        <video class="video-card__player" controls preload="metadata">
+          <source src="${v.video}">
+        </video>
+        <div class="video-card__title">${v.title}</div>
+        ${v.caption ? `<div class="video-card__caption">${v.caption}</div>` : ''}
+      </div>`;
+  }
+
+  function momentCardHTML(m) {
+    const media = m.mediaType === 'video'
+      ? `<video class="moment-card__media" controls preload="metadata"><source src="${m.media}"></video>`
+      : `<img class="moment-card__media" src="${m.media}" alt="${m.customerName || 'Customer moment'}">`;
+    const hasCaption = m.customerName || m.occasion;
+    return `
+      <div class="moment-card">
+        ${media}
+        ${hasCaption ? `
+        <div class="moment-card__caption">
+          ${m.customerName ? `<div class="moment-card__name">${m.customerName}</div>` : ''}
+          ${m.occasion ? `<div class="moment-card__occasion">${m.occasion}</div>` : ''}
+        </div>` : ''}
+      </div>`;
+  }
+
   function renderHome() {
-    document.getElementById('collectionsGrid').innerHTML = COLLECTIONS.map(collectionCardHTML).join('');
+    document.getElementById('collectionsGrid').innerHTML = buildCollections().map(collectionCardHTML).join('');
     document.getElementById('featuredGrid').innerHTML = PRODUCTS.slice(0, 4).map(productCardHTML).join('');
+    const videoSection = document.getElementById('craft-videos');
+    videoSection.hidden = VIDEOS.length === 0;
+    if (VIDEOS.length) {
+      document.getElementById('videosGrid').innerHTML = VIDEOS.map(videoCardHTML).join('');
+    }
+
+    const momentsSection = document.getElementById('customer-moments');
+    momentsSection.hidden = MOMENTS.length === 0;
+    if (MOMENTS.length) {
+      document.getElementById('momentsGrid').innerHTML = MOMENTS.map(momentCardHTML).join('');
+    }
+
+    const makerSection = document.getElementById('maker');
+    const hasMaker = ABOUT && ABOUT.name && ABOUT.bio;
+    makerSection.hidden = !hasMaker;
+    if (hasMaker) {
+      document.getElementById('makerPhoto').src = ABOUT.photo || 'assets/images/kente-heritage.jpg';
+      document.getElementById('makerPhoto').alt = ABOUT.name;
+      document.getElementById('makerName').textContent = ABOUT.name;
+      document.getElementById('makerRole').textContent = ABOUT.role || '';
+      const bioParas = ABOUT.bio.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+      document.getElementById('makerBio').innerHTML = bioParas.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+    }
   }
 
   function renderShop() {
@@ -331,12 +382,40 @@
     state.page = 'home';
   }
 
-  routeFromHash();
-  render();
-  if (location.hash === '#heritage' || location.hash === '#/heritage') {
-    requestAnimationFrame(() => {
-      const el = document.getElementById('heritage');
-      if (el) el.scrollIntoView();
-    });
+  async function init() {
+    try {
+      const res = await fetch('/api/products', { cache: 'no-store' });
+      PRODUCTS = await res.json();
+    } catch (e) {
+      PRODUCTS = [];
+    }
+    try {
+      const res = await fetch('/api/videos', { cache: 'no-store' });
+      VIDEOS = await res.json();
+    } catch (e) {
+      VIDEOS = [];
+    }
+    try {
+      const res = await fetch('/api/about', { cache: 'no-store' });
+      ABOUT = await res.json();
+    } catch (e) {
+      ABOUT = null;
+    }
+    try {
+      const res = await fetch('/api/moments', { cache: 'no-store' });
+      MOMENTS = await res.json();
+    } catch (e) {
+      MOMENTS = [];
+    }
+    routeFromHash();
+    render();
+    if (location.hash === '#heritage' || location.hash === '#/heritage') {
+      requestAnimationFrame(() => {
+        const el = document.getElementById('heritage');
+        if (el) el.scrollIntoView();
+      });
+    }
   }
+
+  init();
 })();
