@@ -127,6 +127,10 @@ app.get('/api/policy', async (req, res) => {
   const doc = await db.collection('policy').findOne({ _id: 'singleton' });
   res.json(stripMongoId(doc) || { content: '' });
 });
+app.get('/api/gallery', async (req, res) => {
+  const list = await db.collection('gallery').find().toArray();
+  res.json(list.map(stripMongoId));
+});
 
 // ---- admin auth ----
 // Stateless: the client stores the password locally and sends it as a header
@@ -377,6 +381,68 @@ app.put('/api/admin/moments/:id', requireAdmin, uploadMoment.single('media'), as
 app.delete('/api/admin/moments/:id', requireAdmin, async (req, res) => {
   const result = await db.collection('moments').deleteOne({ id: req.params.id });
   if (result.deletedCount === 0) return res.status(404).json({ error: 'Moment not found' });
+  res.json({ ok: true });
+});
+
+// ---- admin "design gallery" management ----
+// Pure inspiration/reference photos of patterns and designs — not tied to
+// actual shop inventory or purchasable stock.
+app.get('/api/admin/gallery', requireAdmin, async (req, res) => {
+  const list = await db.collection('gallery').find().toArray();
+  res.json(list.map(stripMongoId));
+});
+
+app.post('/api/admin/gallery', requireAdmin, uploadImage.single('image'), async (req, res) => {
+  const b = req.body || {};
+  if (!req.file) return res.status(400).json({ error: 'A photo is required' });
+
+  let uploaded;
+  try {
+    uploaded = await uploadToCloudinary(req.file.buffer, 'image');
+  } catch (err) {
+    return res.status(500).json({ error: 'Could not upload that photo. Try again.' });
+  }
+
+  const collection = db.collection('gallery');
+  const item = {
+    id: await uniqueId(slugify(b.name || 'design'), collection),
+    name: (b.name || '').trim(),
+    description: (b.description || '').trim(),
+    image: uploaded.secure_url,
+    createdAt: Date.now()
+  };
+  await collection.insertOne(item);
+  res.status(201).json(stripMongoId(item));
+});
+
+app.put('/api/admin/gallery/:id', requireAdmin, uploadImage.single('image'), async (req, res) => {
+  const collection = db.collection('gallery');
+  const existing = await collection.findOne({ id: req.params.id });
+  if (!existing) return res.status(404).json({ error: 'Design not found' });
+  const b = req.body || {};
+  let image = existing.image;
+
+  if (req.file) {
+    try {
+      const uploaded = await uploadToCloudinary(req.file.buffer, 'image');
+      image = uploaded.secure_url;
+    } catch (err) {
+      return res.status(500).json({ error: 'Could not upload that photo. Try again.' });
+    }
+  }
+
+  const updates = {
+    name: b.name !== undefined ? b.name.trim() : existing.name,
+    description: b.description !== undefined ? b.description.trim() : existing.description,
+    image
+  };
+  await collection.updateOne({ id: req.params.id }, { $set: updates });
+  res.json(stripMongoId({ ...existing, ...updates }));
+});
+
+app.delete('/api/admin/gallery/:id', requireAdmin, async (req, res) => {
+  const result = await db.collection('gallery').deleteOne({ id: req.params.id });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Design not found' });
   res.json({ ok: true });
 });
 

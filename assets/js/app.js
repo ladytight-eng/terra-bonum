@@ -9,6 +9,7 @@
   let ABOUT = null;
   let MOMENTS = [];
   let POLICY = null;
+  let GALLERY = [];
 
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -216,6 +217,22 @@
     document.getElementById('shopGrid').innerHTML = PRODUCTS.map(productCardHTML).join('');
   }
 
+  function galleryCardHTML(g) {
+    return `
+      <div class="gallery-card">
+        <div class="gallery-card__img"><img src="${g.image}" alt="${g.name || 'Kente design'}"></div>
+        ${g.name ? `<div class="gallery-card__name">${g.name}</div>` : ''}
+        ${g.description ? `<div class="gallery-card__desc">${g.description}</div>` : ''}
+      </div>`;
+  }
+
+  function renderGallery() {
+    const grid = document.getElementById('galleryGrid');
+    grid.innerHTML = GALLERY.length
+      ? GALLERY.map(galleryCardHTML).join('')
+      : '<p class="policy-empty">More designs coming soon — message us on WhatsApp for inspiration in the meantime.</p>';
+  }
+
   function renderProduct() {
     const p = PRODUCTS.find(x => x.id === state.currentId) || PRODUCTS[0];
     const qty = state.detailQty;
@@ -313,6 +330,7 @@
       const target = btn.dataset.nav;
       const isActive = (target === 'home' && state.page === 'home') ||
                         (target === 'shop' && (state.page === 'shop' || state.page === 'product')) ||
+                        (target === 'gallery' && state.page === 'gallery') ||
                         (target === 'policy' && state.page === 'policy') ||
                         (target === 'contact' && state.page === 'contact');
       btn.classList.toggle('active', isActive);
@@ -332,12 +350,14 @@
     document.getElementById('page-home').hidden = state.page !== 'home';
     document.getElementById('page-shop').hidden = state.page !== 'shop';
     document.getElementById('page-product').hidden = state.page !== 'product';
+    document.getElementById('page-gallery').hidden = state.page !== 'gallery';
     document.getElementById('page-policy').hidden = state.page !== 'policy';
     document.getElementById('page-contact').hidden = state.page !== 'contact';
 
     if (state.page === 'home') renderHome();
     if (state.page === 'shop') renderShop();
     if (state.page === 'product') renderProduct();
+    if (state.page === 'gallery') renderGallery();
     if (state.page === 'policy') renderPolicy();
 
     renderNav();
@@ -411,6 +431,7 @@
     const hash = location.hash.replace(/^#\/?/, '');
     if (!hash) { state.page = 'home'; return; }
     if (hash === 'shop') { state.page = 'shop'; return; }
+    if (hash === 'gallery') { state.page = 'gallery'; return; }
     if (hash === 'policy') { state.page = 'policy'; return; }
     if (hash === 'contact') { state.page = 'contact'; return; }
     if (hash === 'heritage') { state.page = 'home'; return; }
@@ -451,6 +472,12 @@
       POLICY = await res.json();
     } catch (e) {
       POLICY = null;
+    }
+    try {
+      const res = await fetch('/api/gallery', { cache: 'no-store' });
+      GALLERY = await res.json();
+    } catch (e) {
+      GALLERY = [];
     }
     routeFromHash();
     render();

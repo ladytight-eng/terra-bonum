@@ -191,6 +191,36 @@
         <div class="admin-success" id="policyFormSuccess" hidden>Saved — check the Policy page to see it live.</div>
       </form>
     </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title" id="galleryFormTitle">Design gallery — add a photo</h2>
+      <p class="admin-panel__hint">Pattern and design photos for customers to browse for inspiration — not necessarily items currently in stock. Shown on its own "Designs" page, separate from your shop.</p>
+      <form class="admin-form" id="galleryForm" enctype="multipart/form-data">
+        <input type="hidden" id="gId" value="">
+        <label class="field">Design name (optional)
+          <input type="text" id="gName" placeholder="e.g. Adweneasa Pattern">
+        </label>
+        <label class="field">Description (optional)
+          <textarea id="gDescription" rows="2" placeholder="A short note about this design…"></textarea>
+        </label>
+        <label class="field" id="gFileLabel">Photo
+          <input type="file" id="gFile" accept="image/jpeg,image/png,image/webp,image/gif" required>
+        </label>
+        <div class="admin-form__preview" id="gPreview" hidden>
+          <img id="gPreviewImg" alt="Current photo">
+        </div>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--primary" id="gallerySubmitBtn">Add design</button>
+          <button type="button" class="btn btn--outline" id="galleryCancelEditBtn" hidden>Cancel edit</button>
+        </div>
+        <div class="admin-error" id="galleryFormError" hidden></div>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title">Current designs (<span id="galleryCount">0</span>)</h2>
+      <div class="admin-list" id="galleryList"></div>
+    </section>
   </div>
 
 <script src="assets/js/admin.js"></script>

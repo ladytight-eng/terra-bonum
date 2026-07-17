@@ -67,6 +67,7 @@
     loadAbout().catch(() => {});
     loadMoments().catch(() => {});
     loadPolicy().catch(() => {});
+    loadGallery().catch(() => {});
   }
 
   async function checkSession() {
@@ -596,6 +597,136 @@
     } finally {
       policySubmitBtn.disabled = false;
       policySubmitBtn.textContent = 'Save';
+    }
+  });
+
+  // ---- Design gallery ----
+  const galleryForm = document.getElementById('galleryForm');
+  const galleryFormError = document.getElementById('galleryFormError');
+  const galleryList = document.getElementById('galleryList');
+  const galleryCount = document.getElementById('galleryCount');
+  const gallerySubmitBtn = document.getElementById('gallerySubmitBtn');
+  const galleryFormTitle = document.getElementById('galleryFormTitle');
+  const galleryCancelEditBtn = document.getElementById('galleryCancelEditBtn');
+  const gFileInput = document.getElementById('gFile');
+  const gPreview = document.getElementById('gPreview');
+  const gPreviewImg = document.getElementById('gPreviewImg');
+
+  let editingGalleryId = null;
+  let galleryCache = [];
+
+  function galleryRowHTML(g) {
+    const label = g.name || 'Untitled design';
+    return `
+      <div class="admin-row" data-id="${g.id}">
+        <div class="admin-row__img"><img src="${g.image}" alt="${label}"></div>
+        <div class="admin-row__info">
+          <div class="admin-row__name">${label}</div>
+          <div class="admin-row__meta">${g.description || 'No description'}</div>
+        </div>
+        <div class="admin-row__actions">
+          <button data-gallery-edit="${g.id}">Edit</button>
+          <button class="danger" data-gallery-delete="${g.id}">Delete</button>
+        </div>
+      </div>`;
+  }
+
+  async function loadGallery() {
+    const res = await api('/api/admin/gallery');
+    galleryCache = await res.json();
+    galleryCount.textContent = galleryCache.length;
+    galleryList.innerHTML = galleryCache.length
+      ? galleryCache.map(galleryRowHTML).join('')
+      : '<div class="admin-empty">No designs yet — add your first photo above.</div>';
+  }
+
+  galleryList.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('[data-gallery-edit]');
+    if (editBtn) { startGalleryEdit(editBtn.dataset.galleryEdit); return; }
+    const delBtn = e.target.closest('[data-gallery-delete]');
+    if (delBtn) deleteGalleryItem(delBtn.dataset.galleryDelete);
+  });
+
+  function startGalleryEdit(id) {
+    const g = galleryCache.find(x => x.id === id);
+    if (!g) return;
+    editingGalleryId = id;
+    document.getElementById('gId').value = id;
+    document.getElementById('gName').value = g.name || '';
+    document.getElementById('gDescription').value = g.description || '';
+    gFileInput.value = '';
+    gFileInput.required = false;
+    gPreviewImg.src = g.image;
+    gPreview.hidden = false;
+    galleryFormTitle.textContent = 'Edit design';
+    gallerySubmitBtn.textContent = 'Save changes';
+    galleryCancelEditBtn.hidden = false;
+    galleryFormError.hidden = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetGalleryForm() {
+    editingGalleryId = null;
+    galleryForm.reset();
+    document.getElementById('gId').value = '';
+    gFileInput.required = true;
+    gPreview.hidden = true;
+    galleryFormTitle.textContent = 'Design gallery — add a photo';
+    gallerySubmitBtn.textContent = 'Add design';
+    galleryCancelEditBtn.hidden = true;
+    galleryFormError.hidden = true;
+  }
+
+  galleryCancelEditBtn.addEventListener('click', resetGalleryForm);
+
+  async function deleteGalleryItem(id) {
+    if (!confirm('Delete this design photo? This cannot be undone.')) return;
+    try {
+      const res = await api('/api/admin/gallery/' + encodeURIComponent(id), { method: 'DELETE' });
+      if (res.ok) {
+        if (editingGalleryId === id) resetGalleryForm();
+        loadGallery();
+      }
+    } catch (err) {
+      // api() already surfaced the error via the login view
+    }
+  }
+
+  galleryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    galleryFormError.hidden = true;
+    const file = gFileInput.files[0];
+    if (!editingGalleryId && !file) {
+      galleryFormError.textContent = 'Choose a photo first.';
+      galleryFormError.hidden = false;
+      return;
+    }
+    const fd = new FormData();
+    fd.append('name', document.getElementById('gName').value.trim());
+    fd.append('description', document.getElementById('gDescription').value.trim());
+    if (file) fd.append('image', file);
+
+    const url = editingGalleryId ? '/api/admin/gallery/' + encodeURIComponent(editingGalleryId) : '/api/admin/gallery';
+    const method = editingGalleryId ? 'PUT' : 'POST';
+
+    gallerySubmitBtn.disabled = true;
+    gallerySubmitBtn.textContent = editingGalleryId ? 'Saving…' : 'Uploading…';
+    try {
+      const res = await api(url, { method, body: fd });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        galleryFormError.textContent = data.error || 'Something went wrong. Please try again.';
+        galleryFormError.hidden = false;
+        return;
+      }
+      resetGalleryForm();
+      loadGallery();
+    } catch (err) {
+      galleryFormError.textContent = err.message || 'Something went wrong. Please try again.';
+      galleryFormError.hidden = false;
+    } finally {
+      gallerySubmitBtn.disabled = false;
+      gallerySubmitBtn.textContent = editingGalleryId ? 'Save changes' : 'Add design';
     }
   });
 
