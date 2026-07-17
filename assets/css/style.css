@@ -189,7 +189,7 @@ img { display: block; width: 100%; height: 100%; object-fit: cover; }
 }
 .maker__title { font-family: 'Marcellus', serif; font-size: 34px; color: var(--ink); margin-bottom: 4px; }
 .maker__role { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 16px; }
-.maker__copy p { font-size: 16px; line-height: 1.72; color: var(--muted); max-width: 640px; margin-bottom: 16px; }
+.maker__copy p { font-size: 16px; line-height: 1.72; color: var(--muted); max-width: 640px; margin-bottom: 16px; text-align: justify; text-align-last: left; hyphens: auto; }
 .maker__copy p:last-child { margin-bottom: 0; }
 
 .heritage { background: var(--ink); color: var(--cream); scroll-margin-top: 90px; }
@@ -199,7 +199,7 @@ img { display: block; width: 100%; height: 100%; object-fit: cover; }
 }
 .heritage__img { position: relative; aspect-ratio: 5/4; border-radius: 6px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.6); }
 .heritage__title { font-family: 'Marcellus', serif; font-size: 42px; line-height: 1.1; margin-bottom: 22px; }
-.heritage__copy p { font-size: 16px; line-height: 1.72; color: #d9cdb8; margin-bottom: 18px; }
+.heritage__copy p { font-size: 16px; line-height: 1.72; color: #d9cdb8; margin-bottom: 18px; text-align: justify; text-align-last: left; hyphens: auto; }
 .heritage__copy p:last-of-type { margin-bottom: 28px; }
 .motif-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .motif { border: 1px solid #3a332a; border-radius: 6px; padding: 14px 18px; }
@@ -296,7 +296,7 @@ img { display: block; width: 100%; height: 100%; object-fit: cover; }
 #page-policy { max-width: 760px; margin: 0 auto; padding: 52px 28px 72px; }
 .policy-body h2 { font-family: 'Marcellus', serif; font-size: 22px; color: var(--ink); margin: 32px 0 10px; }
 .policy-body h2:first-child { margin-top: 0; }
-.policy-body p { font-size: 15.5px; line-height: 1.72; color: var(--muted); margin-bottom: 14px; }
+.policy-body p { font-size: 15.5px; line-height: 1.72; color: var(--muted); margin-bottom: 14px; text-align: justify; text-align-last: left; hyphens: auto; }
 .policy-body ul { margin: 0 0 14px; padding-left: 22px; }
 .policy-body li { font-size: 15.5px; line-height: 1.72; color: var(--muted); margin-bottom: 6px; }
 .policy-body .policy-empty { color: var(--muted-2); font-size: 14px; }
