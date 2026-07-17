@@ -176,6 +176,21 @@
       <h2 class="admin-panel__title">Current moments (<span id="momentCount">0</span>)</h2>
       <div class="admin-list" id="momentList"></div>
     </section>
+
+    <section class="admin-panel">
+      <h2 class="admin-panel__title">Shipping &amp; Returns policy</h2>
+      <p class="admin-panel__hint">Shown on its own "Policy" page on the site. Start a line with **Like This** to make it a heading, or "- " to make a bullet point; leave a blank line between sections.</p>
+      <form class="admin-form" id="policyForm">
+        <label class="field">Policy text
+          <textarea id="pContent" rows="16" placeholder="**Our Commitment**&#10;Every piece from Terra Bonum...&#10;&#10;**Production Time**&#10;A standard set takes..."></textarea>
+        </label>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--primary" id="policySubmitBtn">Save</button>
+        </div>
+        <div class="admin-error" id="policyFormError" hidden></div>
+        <div class="admin-success" id="policyFormSuccess" hidden>Saved — check the Policy page to see it live.</div>
+      </form>
+    </section>
   </div>
 
 <script src="assets/js/admin.js"></script>

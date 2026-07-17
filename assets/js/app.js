@@ -8,9 +8,35 @@
   let VIDEOS = [];
   let ABOUT = null;
   let MOMENTS = [];
+  let POLICY = null;
 
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // Minimal markdown-lite: **Heading** on its own line becomes a heading,
+  // consecutive "- " lines become a bullet list, everything else is a
+  // paragraph. Blank lines separate blocks.
+  function renderPolicyHTML(text) {
+    const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+    return blocks.map(block => {
+      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+      let html = '';
+      let i = 0;
+      const headingMatch = lines[0] && lines[0].match(/^\*\*(.+)\*\*$/);
+      if (headingMatch) {
+        html += `<h2>${escapeHtml(headingMatch[1])}</h2>`;
+        i = 1;
+      }
+      const rest = lines.slice(i);
+      if (!rest.length) return html;
+      if (rest.every(l => l.startsWith('- '))) {
+        html += '<ul>' + rest.map(l => `<li>${escapeHtml(l.slice(2))}</li>`).join('') + '</ul>';
+      } else {
+        html += `<p>${escapeHtml(rest.join(' '))}</p>`;
+      }
+      return html;
+    }).join('');
   }
 
   function buildCollections() {
@@ -287,20 +313,32 @@
       const target = btn.dataset.nav;
       const isActive = (target === 'home' && state.page === 'home') ||
                         (target === 'shop' && (state.page === 'shop' || state.page === 'product')) ||
+                        (target === 'policy' && state.page === 'policy') ||
                         (target === 'contact' && state.page === 'contact');
       btn.classList.toggle('active', isActive);
     });
+  }
+
+  function renderPolicy() {
+    const el = document.getElementById('policyBody');
+    if (POLICY && POLICY.content) {
+      el.innerHTML = renderPolicyHTML(POLICY.content);
+    } else {
+      el.innerHTML = '<p class="policy-empty">Our shipping and returns policy is being finalized — check back soon, or message us on WhatsApp with any questions.</p>';
+    }
   }
 
   function render() {
     document.getElementById('page-home').hidden = state.page !== 'home';
     document.getElementById('page-shop').hidden = state.page !== 'shop';
     document.getElementById('page-product').hidden = state.page !== 'product';
+    document.getElementById('page-policy').hidden = state.page !== 'policy';
     document.getElementById('page-contact').hidden = state.page !== 'contact';
 
     if (state.page === 'home') renderHome();
     if (state.page === 'shop') renderShop();
     if (state.page === 'product') renderProduct();
+    if (state.page === 'policy') renderPolicy();
 
     renderNav();
     renderCart();
@@ -373,6 +411,7 @@
     const hash = location.hash.replace(/^#\/?/, '');
     if (!hash) { state.page = 'home'; return; }
     if (hash === 'shop') { state.page = 'shop'; return; }
+    if (hash === 'policy') { state.page = 'policy'; return; }
     if (hash === 'contact') { state.page = 'contact'; return; }
     if (hash === 'heritage') { state.page = 'home'; return; }
     if (hash.startsWith('product/')) {
@@ -406,6 +445,12 @@
       MOMENTS = await res.json();
     } catch (e) {
       MOMENTS = [];
+    }
+    try {
+      const res = await fetch('/api/policy', { cache: 'no-store' });
+      POLICY = await res.json();
+    } catch (e) {
+      POLICY = null;
     }
     routeFromHash();
     render();

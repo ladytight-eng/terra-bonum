@@ -66,6 +66,7 @@
     loadVideos().catch(() => {});
     loadAbout().catch(() => {});
     loadMoments().catch(() => {});
+    loadPolicy().catch(() => {});
   }
 
   async function checkSession() {
@@ -554,6 +555,47 @@
     } finally {
       momentSubmitBtn.disabled = false;
       momentSubmitBtn.textContent = editingMomentId ? 'Save changes' : 'Add moment';
+    }
+  });
+
+  // ---- Shipping & Returns policy ----
+  const policyForm = document.getElementById('policyForm');
+  const policyFormError = document.getElementById('policyFormError');
+  const policyFormSuccess = document.getElementById('policyFormSuccess');
+  const policySubmitBtn = document.getElementById('policySubmitBtn');
+  const pContent = document.getElementById('pContent');
+
+  async function loadPolicy() {
+    const res = await api('/api/admin/policy');
+    const policy = await res.json();
+    pContent.value = policy.content || '';
+  }
+
+  policyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    policyFormError.hidden = true;
+    policyFormSuccess.hidden = true;
+    policySubmitBtn.disabled = true;
+    policySubmitBtn.textContent = 'Saving…';
+    try {
+      const res = await api('/api/admin/policy', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: pContent.value })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        policyFormError.textContent = data.error || 'Something went wrong. Please try again.';
+        policyFormError.hidden = false;
+        return;
+      }
+      policyFormSuccess.hidden = false;
+    } catch (err) {
+      policyFormError.textContent = err.message || 'Something went wrong. Please try again.';
+      policyFormError.hidden = false;
+    } finally {
+      policySubmitBtn.disabled = false;
+      policySubmitBtn.textContent = 'Save';
     }
   });
 

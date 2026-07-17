@@ -123,6 +123,10 @@ app.get('/api/moments', async (req, res) => {
   const list = await db.collection('moments').find().toArray();
   res.json(list.map(stripMongoId));
 });
+app.get('/api/policy', async (req, res) => {
+  const doc = await db.collection('policy').findOne({ _id: 'singleton' });
+  res.json(stripMongoId(doc) || { content: '' });
+});
 
 // ---- admin auth ----
 // Stateless: the client stores the password locally and sends it as a header
@@ -294,6 +298,19 @@ app.put('/api/admin/about', requireAdmin, uploadImage.single('photo'), async (re
     photo
   };
   await db.collection('about').updateOne({ _id: 'singleton' }, { $set: updated }, { upsert: true });
+  res.json(updated);
+});
+
+// ---- admin "policy" (shipping & returns) management ----
+app.get('/api/admin/policy', requireAdmin, async (req, res) => {
+  const doc = await db.collection('policy').findOne({ _id: 'singleton' });
+  res.json(stripMongoId(doc) || { content: '' });
+});
+
+app.put('/api/admin/policy', requireAdmin, async (req, res) => {
+  const b = req.body || {};
+  const updated = { content: (b.content || '').trim() };
+  await db.collection('policy').updateOne({ _id: 'singleton' }, { $set: updated }, { upsert: true });
   res.json(updated);
 });
 
